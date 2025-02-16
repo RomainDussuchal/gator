@@ -13,23 +13,16 @@ import (
 )
 
 const createFeed = `-- name: CreateFeed :one
-INSERT INTO feeds (id, name, created_at, updated_at, url, user_id)
-VALUES (
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    $6
-)
+INSERT INTO feeds (id, created_at, updated_at, name, url, user_id)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, created_at, updated_at, name, url, user_id
 `
 
 type CreateFeedParams struct {
 	ID        uuid.UUID
-	Name      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Name      string
 	Url       string
 	UserID    uuid.UUID
 }
@@ -37,9 +30,9 @@ type CreateFeedParams struct {
 func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, error) {
 	row := q.db.QueryRowContext(ctx, createFeed,
 		arg.ID,
-		arg.Name,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.Name,
 		arg.Url,
 		arg.UserID,
 	)
@@ -55,29 +48,56 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 	return i, err
 }
 
-const getAllFeeds = `-- name: GetAllFeeds :many
-SELECT feeds.name, feeds.url, users.name
-FROM feeds
-INNER JOIN users 
-ON feeds.user_id = users.id
+const deleteFeed = `-- name: DeleteFeed :exec
+DELETE FROM feeds
+WHERE id = $1
 `
 
-type GetAllFeedsRow struct {
-	Name   string
-	Url    string
-	Name_2 string
+func (q *Queries) DeleteFeed(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteFeed, id)
+	return err
 }
 
-func (q *Queries) GetAllFeeds(ctx context.Context) ([]GetAllFeedsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllFeeds)
+const getFeedByURL = `-- name: GetFeedByURL :one
+SELECT id, created_at, updated_at, name, url, user_id FROM feeds
+WHERE url = $1
+`
+
+func (q *Queries) GetFeedByURL(ctx context.Context, url string) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByURL, url)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.UserID,
+	)
+	return i, err
+}
+
+const getFeeds = `-- name: GetFeeds :many
+SELECT id, created_at, updated_at, name, url, user_id FROM feeds
+`
+
+func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getFeeds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAllFeedsRow
+	var items []Feed
 	for rows.Next() {
-		var i GetAllFeedsRow
-		if err := rows.Scan(&i.Name, &i.Url, &i.Name_2); err != nil {
+		var i Feed
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.Url,
+			&i.UserID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
