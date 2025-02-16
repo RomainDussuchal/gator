@@ -49,16 +49,6 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 	return i, err
 }
 
-const deleteFeed = `-- name: DeleteFeed :exec
-DELETE FROM feeds
-WHERE id = $1
-`
-
-func (q *Queries) DeleteFeed(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteFeed, id)
-	return err
-}
-
 const getFeedByURL = `-- name: GetFeedByURL :one
 SELECT id, created_at, updated_at, name, url, user_id, last_fetched_at FROM feeds
 WHERE url = $1
@@ -137,7 +127,7 @@ func (q *Queries) GetNextFeedToFetch(ctx context.Context) (Feed, error) {
 
 const markFeedFetched = `-- name: MarkFeedFetched :one
 UPDATE feeds
-SET   last_fetched_at = NOW(),
+SET last_fetched_at = NOW(),
 updated_at = NOW()
 WHERE id = $1
 RETURNING id, created_at, updated_at, name, url, user_id, last_fetched_at
