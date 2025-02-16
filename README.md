@@ -108,12 +108,18 @@ Here are some commands you can run with Gator:
 register: Create a new user.
 
 ```bash
-gator register <username> <password>
+gator register <username>
 ```
 
 login: Log in as an existing user.
 
 ```bash
 
-gator login <username> <password>
+gator login <username>
+```
+
+Add Feed:
+
+```bash
+gator addfeed <name> <url>
 ```
