@@ -113,7 +113,7 @@ gator register <username> <password>
 
 login: Log in as an existing user.
 
-bash
+```bash
 
 gator login <username> <password>
-addfeed: Add a new RSS feed.
+```
